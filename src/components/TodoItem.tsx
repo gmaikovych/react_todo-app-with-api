@@ -10,7 +10,7 @@ type Props = {
   completed: boolean;
   loadingTodoId: number | null;
   onDelete: (todoId: number) => void;
-  onUpdate: (todo: Omit<Todo, 'userId'>) => void;
+  onUpdate: (todo: Omit<Todo, 'userId'>) => Promise<void>;
 };
 
 export const TodoItem: React.FC<Props> = ({
@@ -25,12 +25,18 @@ export const TodoItem: React.FC<Props> = ({
   const [editedTitle, setEditedTitle] = useState(title);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  function handleSubmit() {
+  useEffect(() => {
+    if (!isEditing) {
+      setEditedTitle(title);
+    }
+  }, [title, isEditing]);
+
+  async function handleSubmit() {
     const trimmedTitle = editedTitle.trim();
 
-    setIsEditing(false);
-
     if (trimmedTitle === title) {
+      setIsEditing(false);
+
       return;
     }
 
@@ -40,11 +46,17 @@ export const TodoItem: React.FC<Props> = ({
       return;
     }
 
-    onUpdate({
-      id,
-      title: editedTitle.trim(),
-      completed,
-    });
+    try {
+      await onUpdate({
+        id,
+        title: trimmedTitle,
+        completed,
+      });
+
+      setIsEditing(false);
+    } catch (error) {
+      setIsEditing(true);
+    }
   }
 
   useEffect(() => {
@@ -75,6 +87,7 @@ export const TodoItem: React.FC<Props> = ({
           <input
             ref={inputRef}
             className="todo__title-field"
+            data-cy="TodoTitleField"
             value={editedTitle}
             onChange={e => setEditedTitle(e.target.value)}
             onBlur={handleSubmit}
@@ -96,11 +109,7 @@ export const TodoItem: React.FC<Props> = ({
               setIsEditing(true);
             }}
           >
-            {id === 0 || loadingTodoId !== id
-              ? title
-              : editedTitle !== title
-                ? editedTitle
-                : 'Todo is being saved now'}
+            {title}
           </span>
           <button
             type="button"

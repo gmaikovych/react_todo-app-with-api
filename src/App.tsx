@@ -17,6 +17,10 @@ export const App: React.FC = () => {
   const [tempTodo, setTempTodo] = useState<Todo | null>(null);
 
   const visibleTodos = todos.filter(todo => {
+    if (loadingTodoId !== null && todo.id === loadingTodoId) {
+      return true;
+    }
+
     if (filter === TodoFilter.Active) {
       return !todo.completed;
     }
@@ -92,10 +96,10 @@ export const App: React.FC = () => {
       });
   }
 
-  function updateTodo(todoToUpdate: Omit<Todo, 'userId'>) {
+  function updateTodo(todoToUpdate: Omit<Todo, 'userId'>): Promise<void> {
     setLoadingTodoId(todoToUpdate.id);
 
-    todoService
+    return todoService
       .editTodo(todoToUpdate)
       .then(updatedTodo => {
         setTodos(currentTodos =>
@@ -107,6 +111,8 @@ export const App: React.FC = () => {
       .catch(() => {
         setErrorMessage('Unable to update a todo');
         setTimeout(() => setErrorMessage(''), 3000);
+
+        return Promise.reject();
       })
       .finally(() => {
         setLoadingTodoId(null);
@@ -136,7 +142,7 @@ export const App: React.FC = () => {
   }
 
   function toggleAllTodos() {
-    const shouldComplete = todos.some(todo => !todo.completed); // true if at least one is not completed
+    const shouldComplete = todos.some(todo => !todo.completed);
     const todosToUpdate = todos.filter(
       todo => todo.completed !== shouldComplete,
     );
@@ -145,7 +151,7 @@ export const App: React.FC = () => {
       return;
     }
 
-    setLoadingTodoId(-1); // use -1 as special marker for bulk update
+    setLoadingTodoId(-1);
 
     Promise.allSettled(
       todosToUpdate.map(todo =>

@@ -6,7 +6,7 @@ type Props = {
   todos: Todo[];
   onDelete: (todoId: number) => void;
   loadingTodoId: number | null;
-  onUpdate: (todo: Omit<Todo, 'userId'>) => void;
+  onUpdate: (todo: Omit<Todo, 'userId'>) => Promise<void>;
 };
 
 export const TodoList: React.FC<Props> = ({
